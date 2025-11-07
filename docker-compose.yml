@@ -1,0 +1,75 @@
+# Docker Compose Configuration
+# Honey Bee Toxicity Prediction System
+# =====================================
+#
+# This configuration orchestrates:
+# - FastAPI Backend (ML model serving)
+# - React Frontend (Web application)
+#
+# Usage:
+#   docker-compose up -d        # Start all services
+#   docker-compose down         # Stop all services
+#   docker-compose logs -f      # View logs
+#   docker-compose ps           # Check status
+
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: bee-toxicity-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs:ro  # Mount outputs as read-only
+      - ./app/backend:/app/app/backend  # Mount for development
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_PATH=/app/outputs/models/best_model_xgboost.pkl
+      - PREPROCESSOR_PATH=/app/outputs/preprocessors/preprocessor.pkl
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frontend Web App Service (when implemented)
+  # Uncomment when React frontend is built
+  # frontend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.frontend
+  #   container_name: bee-toxicity-web
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - backend
+  #   environment:
+  #     - REACT_APP_API_URL=http://backend:8000
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost/"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 5s
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
+
+# Networks
+networks:
+  app-network:
+    driver: bridge
+
+# Volumes (if needed for persistent data)
+volumes:
+  model-data:
+    driver: local
+
